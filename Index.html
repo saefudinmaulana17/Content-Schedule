@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengatur Jadwal Konten TikTok & Facebook</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              tiktok: '#00f2fe',
+              tiktokDark: '#111827',
+              facebook: '#1877F2',
+              primary: '#6366f1',
+              primaryHover: '#4f46e5',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- Toast Notification Pop-up -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium">
+    <i id="toast-icon" class="fas fa-check-circle text-emerald-400"></i>
+    <span id="toast-message">Teks berhasil disalin!</span>
+  </div>
+
+  <!-- Header Banner -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+            <i class="fas fa-calendar-check text-lg"></i>
+          </div>
+          <div>
+            <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight leading-snug">Content Scheduler</h1>
+            <p class="text-xs text-slate-500 hidden sm:block">Kelola jadwal upload TikTok & Facebook harian Anda</p>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex items-center gap-1.5 sm:gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200/60">
+          <button id="tab-btn-schedule" onclick="switchTab('schedule')" class="flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-xs">
+            <i class="fas fa-list-check"></i>
+            <span>Jadwal Harian</span>
+          </button>
+          <button id="tab-btn-monitor" onclick="switchTab('monitor')" class="flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+            <i class="fas fa-calendar-days"></i>
+            <span>Monitor Tanggal</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- Quick Status Bar (Auto-save Indicator) -->
+    <div class="mb-5 flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-slate-200/80 shadow-xs">
+      <div class="flex items-center gap-2 text-xs text-slate-500">
+        <span id="save-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+        <span id="save-status-text" class="font-medium">Semua perubahan tersimpan otomatis</span>
+      </div>
+      <div class="text-[11px] text-slate-400 font-medium">
+        <i class="fas fa-cloud text-slate-300 mr-1"></i> Auto-Sync Aktif
+      </div>
+    </div>
+
+    <!-- Video & Upload Tracker Summary -->
+    <div class="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200/80 shadow-xs">
+        <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Konten</p>
+        <h4 id="quick-total-videos" class="text-xl sm:text-2xl font-bold text-slate-800 mt-0.5">0</h4>
+      </div>
+      <div class="bg-emerald-50/70 p-3.5 sm:p-4 rounded-xl border border-emerald-200/80 shadow-xs">
+        <p class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+          <i class="fas fa-video text-xs"></i> Video Dibuat
+        </p>
+        <h4 id="quick-ready-videos" class="text-xl sm:text-2xl font-bold text-emerald-700 mt-0.5">0</h4>
+      </div>
+      <div class="bg-blue-50/70 p-3.5 sm:p-4 rounded-xl border border-blue-200/80 shadow-xs">
+        <p class="text-[11px] font-semibold text-blue-700 uppercase tracking-wider flex items-center gap-1">
+          <i class="fas fa-cloud-arrow-up text-xs"></i> Sudah Diupload
+        </p>
+        <h4 id="quick-uploaded-videos" class="text-xl sm:text-2xl font-bold text-blue-700 mt-0.5">0</h4>
+      </div>
+      <div class="bg-amber-50/70 p-3.5 sm:p-4 rounded-xl border border-amber-200/80 shadow-xs">
+        <p class="text-[11px] font-semibold text-amber-700 uppercase tracking-wider flex items-center gap-1">
+          <i class="fas fa-clock text-xs"></i> Belum Dibuat
+        </p>
+        <h4 id="quick-pending-videos" class="text-xl sm:text-2xl font-bold text-amber-700 mt-0.5">0</h4>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 1: JADWAL HARIAN ==================== -->
+    <section id="view-schedule" class="space-y-6">
+      
+      <!-- Top Action Bar -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-800">Daftar Rencana Harian</h2>
+          <p class="text-xs sm:text-sm text-slate-500">Mencatat video, caption, catatan khusus, status upload, dan slot posting</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+          <button onclick="addNewDayPrompt()" class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-sm shadow-indigo-200 transition-all">
+            <i class="fas fa-plus"></i>
+            <span>Tambah Hari Baru</span>
+          </button>
+          <div class="relative group">
+            <button class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs sm:text-sm font-medium transition-colors" title="Cadangan Data">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <div class="absolute right-0 mt-1 w-44 bg-white rounded-xl shadow-lg border border-slate-100 p-1.5 hidden group-hover:block z-20">
+              <button onclick="exportData()" class="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2">
+                <i class="fas fa-download text-slate-400"></i> Cadangkan (JSON)
+              </button>
+              <label class="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 cursor-pointer">
+                <i class="fas fa-upload text-slate-400"></i> Pulihkan Data
+                <input type="file" id="import-input" onchange="importData(event)" accept=".json" class="hidden">
+              </label>
+              <button onclick="clearAllData()" class="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 rounded-lg flex items-center gap-2">
+                <i class="fas fa-trash-can text-rose-400"></i> Bersihkan Semua
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Add Date Input Container -->
+      <div id="quick-add-container" class="hidden bg-indigo-50/70 border border-indigo-100 p-4 sm:p-5 rounded-2xl transition-all">
+        <h3 class="text-sm font-bold text-indigo-900 mb-2">Pilih Tanggal Hari Baru:</h3>
+        <div class="flex flex-col sm:flex-row items-center gap-3">
+          <input type="date" id="new-day-picker" class="w-full sm:w-auto px-3.5 py-2.5 rounded-xl border border-indigo-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+          <div class="flex gap-2 w-full sm:w-auto">
+            <button onclick="confirmAddNewDay()" class="flex-1 sm:flex-initial px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-semibold transition-all">
+              Buat Hari Ini
+            </button>
+            <button onclick="cancelQuickAdd()" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl text-xs sm:text-sm font-semibold transition-all">
+              Batal
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div id="schedule-empty-state" class="hidden text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
+        <div class="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+          <i class="fas fa-calendar-plus text-2xl"></i>
+        </div>
+        <h3 class="text-base font-bold text-slate-700 mb-1">Belum Ada Rencana Jadwal</h3>
+        <p class="text-sm text-slate-500 max-w-md mx-auto mb-5">Mulai dengan menambahkan hari untuk merencanakan postingan TikTok dan Facebook Anda.</p>
+        <button onclick="addNewDayPrompt()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all shadow-sm">
+          <i class="fas fa-plus"></i> Tambah Hari Pertama
+        </button>
+      </div>
+
+      <!-- Days List Container -->
+      <div id="days-container" class="space-y-6">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+
+    </section>
+
+    <!-- ==================== TAB 2: MONITOR TANGGAL ==================== -->
+    <section id="view-monitor" class="hidden space-y-6">
+      
+      <!-- Stats Summary -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-xl">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 font-medium">Hari Terjadwal</p>
+            <h3 id="stat-scheduled-days" class="text-2xl font-bold text-slate-800">0</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+            <i class="fas fa-video"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 font-medium">Video Sudah Dibuat</p>
+            <h3 id="stat-videos-ready" class="text-2xl font-bold text-emerald-600">0</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+            <i class="fas fa-cloud-arrow-up"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 font-medium">Konten Sudah Diupload</p>
+            <h3 id="stat-contents-uploaded" class="text-2xl font-bold text-blue-600">0</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 font-medium">Video Belum Dibuat</p>
+            <h3 id="stat-videos-pending" class="text-2xl font-bold text-amber-600">0</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendar Monitor Card -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        
+        <!-- Calendar Header (Month Switcher) -->
+        <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <i class="fas fa-calendar-day"></i>
+            </div>
+            <div>
+              <h2 id="calendar-month-year" class="text-lg font-bold text-slate-800">November 2026</h2>
+              <p class="text-xs text-slate-500">Pantau tanggal yang sudah terisi konten vs tanggal kosong</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="changeMonth(-1)" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors" title="Bulan Sebelumnya">
+              <i class="fas fa-chevron-left text-xs"></i>
+            </button>
+            <button onclick="resetToCurrentMonth()" class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors">
+              Bulan Ini
+            </button>
+            <button onclick="changeMonth(1)" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors" title="Bulan Berikutnya">
+              <i class="fas fa-chevron-right text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="px-6 py-3 bg-slate-50/80 border-b border-slate-100 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+            <span>Ada Jadwal Konten</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-slate-200"></span>
+            <span>Belum Ada Jadwal (Kosong)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full ring-2 ring-indigo-500 bg-white"></span>
+            <span>Hari Ini</span>
+          </div>
+          <span class="text-slate-400 ml-auto hidden md:inline">Klik tanggal untuk melihat ringkasan</span>
+        </div>
+
+        <!-- Days of Week Header -->
+        <div class="grid grid-cols-7 text-center py-2.5 border-b border-slate-100 text-xs font-semibold text-slate-500">
+          <div class="text-rose-500">Min</div>
+          <div>Sen</div>
+          <div>Sel</div>
+          <div>Rab</div>
+          <div>Kam</div>
+          <div>Jum</div>
+          <div class="text-indigo-600">Sab</div>
+        </div>
+
+        <!-- Calendar Dates Grid -->
+        <div id="calendar-grid" class="grid grid-cols-7 gap-px bg-slate-100">
+          <!-- Calendar cells injected via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Selected Date Detail Card -->
+      <div id="calendar-detail-card" class="hidden bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <span id="detail-date-badge" class="inline-block px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-lg mb-1">Pilihan</span>
+            <h3 id="detail-date-title" class="text-base sm:text-lg font-bold text-slate-800">Senin, 02 November 2026</h3>
+          </div>
+          <button onclick="closeDetailCard()" class="text-slate-400 hover:text-slate-600 p-1">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div id="detail-date-content" class="text-sm text-slate-600">
+          <!-- Dynamic details -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-400">
+    <p>Aplikasi Perencana Konten Harian &bull; TikTok & Facebook Scheduler</p>
+  </footer>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    const STORAGE_KEY = 'content_scheduler_data_v2';
+    
+    // Application Data Model
+    let appData = {
+      days: []
+    };
+
+    // Auto-save debounce timer
+    let autoSaveTimeout = null;
+
+    // Calendar Monitor State
+    let currentViewingDate = new Date();
+
+    // Indonesian Day and Month Names
+    const INDONESIAN_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const INDONESIAN_MONTHS = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+
+    // Helper: Format Date to YYYY-MM-DD
+    function formatDateIso(dateObj) {
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // Helper: Parse YYYY-MM-DD to Indonesian formatted text
+    function formatIndonesianDate(isoString) {
+      if (!isoString) return '';
+      const [year, month, day] = isoString.split('-').map(Number);
+      const d = new Date(year, month - 1, day);
+      const dayName = INDONESIAN_DAYS[d.getDay()];
+      const monthName = INDONESIAN_MONTHS[month - 1];
+      return `${dayName}, ${day} ${monthName} ${year}`;
+    }
+
+    // Helper: Generate Unique ID
+    function generateId() {
+      return '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // Create Template for a Content Block
+    function createContentItemTemplate() {
+      return {
+        id: generateId(),
+        title: '',
+        isVideoReady: false,
+        isUploaded: false,
+        caption: '',
+        notes: '',
+        tiktok: {
+          siang: false,
+          sore: false
+        },
+        facebook: {
+          siang: false,
+          malam: false
+        }
+      };
+    }
+
+    // Load Data
+    function loadData() {
+      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('content_scheduler_data_v1');
+      if (saved) {
+        try {
+          appData = JSON.parse(saved);
+          // Migration check for notes and isUploaded
+          if (appData && Array.isArray(appData.days)) {
+            appData.days.forEach(day => {
+              if (Array.isArray(day.contents)) {
+                day.contents.forEach(item => {
+                  if (typeof item.notes === 'undefined') item.notes = '';
+                  if (typeof item.isUploaded === 'undefined') item.isUploaded = false;
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.error("Gagal memuat data dari storage:", e);
+          seedInitialData();
+        }
+      } else {
+        seedInitialData();
+      }
+      renderDays();
+      updateStats();
+    }
+
+    // Auto-save with debounce
+    function triggerAutoSave() {
+      const statusText = document.getElementById('save-status-text');
+      const statusDot = document.getElementById('save-status-dot');
+      
+      if (statusText) statusText.textContent = "Menyimpan perubahan...";
+      if (statusDot) {
+        statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping";
+      }
+
+      clearTimeout(autoSaveTimeout);
+      autoSaveTimeout = setTimeout(() => {
+        saveData();
+        if (statusText) statusText.textContent = "Semua perubahan tersimpan otomatis";
+        if (statusDot) {
+          statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+        }
+      }, 450);
+    }
+
+    // Save Data to Storage
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      updateStats();
+      renderCalendar();
+    }
+
+    // Seed default sample data
+    function seedInitialData() {
+      const today = new Date();
+      const tomorrow = new Date();
+      tomorrow.setDate(today.getDate() + 1);
+
+      appData = {
+        days: [
+          {
+            id: generateId(),
+            date: formatDateIso(today),
+            contents: [
+              {
+                id: generateId(),
+                title: '3 Tips Rahasia Merapikan Feed Sosmed dalam 5 Menit',
+                isVideoReady: true,
+                isUploaded: true,
+                caption: 'Pernah nggak ngerasa feed kamu berantakan? Coba 3 langkah sederhana ini biar akun kamu kelihatan jauh lebih profesional!\n\nSimpan video ini buat dipraktekkin nanti ya! ✨ #TipsSosmed #KontenKreator #TipsTikTok',
+                notes: 'Gunakan musik trending bertempo santai, jangan lupa pasang pinned comment untuk link bio.',
+                tiktok: { siang: true, sore: false },
+                facebook: { siang: true, malam: false }
+              }
+            ]
+          },
+          {
+            id: generateId(),
+            date: formatDateIso(tomorrow),
+            contents: [
+              {
+                id: generateId(),
+                title: 'Behind The Scenes: Setup Studio Rumahan Budget Minim',
+                isVideoReady: false,
+                isUploaded: false,
+                caption: 'Siapa bilang bikin konten butuh modal puluhan juta? Ini breakdown perlengkapan studio sederhana di kamar saya.\n\nKomen di bawah mana yang mau di-review duluan! 👇 #StudioSetup #CreatorSetup',
+                notes: 'Pastikan pencahayaan ring light tidak memantul di kacamata, rekam angle B-roll mic clip-on.',
+                tiktok: { siang: false, sore: true },
+                facebook: { siang: false, malam: true }
+              }
+            ]
+          }
+        ]
+      };
+      saveData();
+    }
+
+    // ==================== RENDERING JADWAL HARIAN ====================
+    function renderDays() {
+      const container = document.getElementById('days-container');
+      const emptyState = document.getElementById('schedule-empty-state');
+
+      if (!appData.days || appData.days.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      
+      // Sort ascending by date
+      appData.days.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      container.innerHTML = appData.days.map((day) => {
+        const indonesianDateText = formatIndonesianDate(day.date);
+        
+        const contentsHtml = day.contents.map((item) => {
+          const isReady = !!item.isVideoReady;
+          const isUploaded = !!item.isUploaded;
+
+          return `
+            <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/90 shadow-xs space-y-4 relative transition-all hover:border-slate-300">
+              
+              <!-- Content Item Header (Dual Checklist Status & Action) -->
+              <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2.5">
+                  
+                  <!-- Checkboxes Group: Video Ready & Content Uploaded -->
+                  <div class="flex flex-wrap items-center gap-2">
+                    
+                    <!-- Kotak Ceklis Video (Belum dibuat / Sudah dibuat) -->
+                    <label class="inline-flex items-center gap-2 text-xs font-semibold px-2.5 py-1.5 rounded-lg cursor-pointer transition-all border ${
+                      isReady 
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs' 
+                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                    }">
+                      <input type="checkbox" 
+                             class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                             ${isReady ? 'checked' : ''} 
+                             onchange="toggleVideoReady('${day.id}', '${item.id}', this.checked)">
+                      <span>
+                        ${isReady 
+                          ? '<i class="fas fa-circle-check text-emerald-600"></i> Video sudah dibuat' 
+                          : '<i class="far fa-circle text-slate-400"></i> Video belum dibuat'
+                        }
+                      </span>
+                    </label>
+
+                    <!-- Kotak Ceklis Upload (Konten belum diupload / Konten sudah diupload) -->
+                    <label class="inline-flex items-center gap-2 text-xs font-semibold px-2.5 py-1.5 rounded-lg cursor-pointer transition-all border ${
+                      isUploaded 
+                        ? 'bg-blue-50 text-blue-800 border-blue-300 shadow-2xs' 
+                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                    }">
+                      <input type="checkbox" 
+                             class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                             ${isUploaded ? 'checked' : ''} 
+                             onchange="toggleContentUploaded('${day.id}', '${item.id}', this.checked)">
+                      <span>
+                        ${isUploaded 
+                          ? '<i class="fas fa-cloud-check text-blue-600"></i> Konten sudah diupload' 
+                          : '<i class="far fa-clock text-slate-400"></i> Konten belum diupload'
+                        }
+                      </span>
+                    </label>
+
+                  </div>
+                  
+                  <div class="flex items-center gap-1.5">
+                    <!-- Copy Title Button -->
+                    <button type="button" 
+                            onclick="copyToClipboard('${escapeAttr(item.title)}', 'Judul Konten')" 
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                            title="Salin Judul">
+                      <i class="far fa-copy text-xs"></i>
+                      <span>Salin Judul</span>
+                    </button>
+
+                    ${day.contents.length > 1 ? `
+                      <button type="button" 
+                              onclick="removeContentItem('${day.id}', '${item.id}')"
+                              class="text-slate-400 hover:text-rose-500 p-1.5 transition-colors"
+                              title="Hapus Konten Ini">
+                        <i class="far fa-trash-alt text-xs"></i>
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+
+                <!-- Input Judul Konten -->
+                <div>
+                  <input type="text" 
+                         placeholder="Ketik judul konten di sini..." 
+                         value="${escapeAttr(item.title)}"
+                         oninput="updateItemField('${day.id}', '${item.id}', 'title', this.value)"
+                         class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all">
+                </div>
+              </div>
+
+              <!-- Draf Caption Box -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+                    <i class="fas fa-align-left text-slate-400"></i>
+                    <span>Draf Caption & Tagar</span>
+                  </label>
+                  <button type="button" 
+                          onclick="copyToClipboard('${escapeAttr(item.caption)}', 'Caption')" 
+                          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium text-slate-600 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                          title="Salin Caption">
+                    <i class="far fa-copy text-xs"></i>
+                    <span>Salin Caption</span>
+                  </button>
+                </div>
+                <textarea rows="3" 
+                          placeholder="Tulis draf caption, call-to-action, dan tagar..."
+                          oninput="updateItemField('${day.id}', '${item.id}', 'caption', this.value)"
+                          class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-700 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all resize-y">${escapeHtml(item.caption)}</textarea>
+              </div>
+
+              <!-- Kotak Catatan (Notes) Setelah Caption -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-medium text-amber-700/80 flex items-center gap-1.5">
+                    <i class="fas fa-note-sticky text-amber-500"></i>
+                    <span>Kotak Catatan Tambahan</span>
+                  </label>
+                  <button type="button" 
+                          onclick="copyToClipboard('${escapeAttr(item.notes || '')}', 'Catatan')" 
+                          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium text-slate-600 bg-slate-100 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                          title="Salin Catatan">
+                    <i class="far fa-copy text-xs"></i>
+                    <span>Salin Catatan</span>
+                  </button>
+                </div>
+                <textarea rows="2" 
+                          placeholder="Catatan ide footage, audio/soundtrack yang dipakai, revisi, atau pengingat penting..."
+                          oninput="updateItemField('${day.id}', '${item.id}', 'notes', this.value)"
+                          class="w-full px-3.5 py-2 bg-amber-50/40 border border-amber-200/80 rounded-xl text-xs sm:text-sm text-slate-700 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-400 transition-all resize-y">${escapeHtml(item.notes || '')}</textarea>
+              </div>
+
+              <!-- Platforms Slots (TikTok & Facebook) -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                
+                <!-- TikTok Slot Box -->
+                <div class="bg-gradient-to-r from-slate-900/5 to-cyan-500/5 p-3 rounded-xl border border-slate-200/80">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs">
+                      <i class="fab fa-tiktok"></i>
+                    </span>
+                    <span class="text-xs font-bold text-slate-800">Target Jadwal TikTok</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200/80 cursor-pointer hover:bg-slate-50 transition-colors ${item.tiktok?.siang ? 'ring-1 ring-cyan-500 bg-cyan-50/30' : ''}">
+                      <input type="checkbox" 
+                             class="rounded text-cyan-600 focus:ring-cyan-500 w-4 h-4"
+                             ${item.tiktok?.siang ? 'checked' : ''}
+                             onchange="updatePlatformSlot('${day.id}', '${item.id}', 'tiktok', 'siang', this.checked)">
+                      <div class="text-xs">
+                        <span class="font-semibold text-slate-700 block">Siang</span>
+                        <span class="text-[10px] text-slate-400">11:30 - 13:00</span>
+                      </div>
+                    </label>
+
+                    <label class="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200/80 cursor-pointer hover:bg-slate-50 transition-colors ${item.tiktok?.sore ? 'ring-1 ring-cyan-500 bg-cyan-50/30' : ''}">
+                      <input type="checkbox" 
+                             class="rounded text-cyan-600 focus:ring-cyan-500 w-4 h-4"
+                             ${item.tiktok?.sore ? 'checked' : ''}
+                             onchange="updatePlatformSlot('${day.id}', '${item.id}', 'tiktok', 'sore', this.checked)">
+                      <div class="text-xs">
+                        <span class="font-semibold text-slate-700 block">Sore</span>
+                        <span class="text-[10px] text-slate-400">16:30 - 18:00</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Facebook Slot Box -->
+                <div class="bg-blue-50/40 p-3 rounded-xl border border-blue-100">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs">
+                      <i class="fab fa-facebook-f"></i>
+                    </span>
+                    <span class="text-xs font-bold text-slate-800">Target Jadwal Facebook</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200/80 cursor-pointer hover:bg-slate-50 transition-colors ${item.facebook?.siang ? 'ring-1 ring-blue-500 bg-blue-50/30' : ''}">
+                      <input type="checkbox" 
+                             class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
+                             ${item.facebook?.siang ? 'checked' : ''}
+                             onchange="updatePlatformSlot('${day.id}', '${item.id}', 'facebook', 'siang', this.checked)">
+                      <div class="text-xs">
+                        <span class="font-semibold text-slate-700 block">Siang</span>
+                        <span class="text-[10px] text-slate-400">12:00 - 13:30</span>
+                      </div>
+                    </label>
+
+                    <label class="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200/80 cursor-pointer hover:bg-slate-50 transition-colors ${item.facebook?.malam ? 'ring-1 ring-blue-500 bg-blue-50/30' : ''}">
+                      <input type="checkbox" 
+                             class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
+                             ${item.facebook?.malam ? 'checked' : ''}
+                             onchange="updatePlatformSlot('${day.id}', '${item.id}', 'facebook', 'malam', this.checked)">
+                      <div class="text-xs">
+                        <span class="font-semibold text-slate-700 block">Malam</span>
+                        <span class="text-[10px] text-slate-400">19:30 - 21:00</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <!-- Day Card Wrapper -->
+          <div id="day-card-${day.id}" class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden transition-all">
+            
+            <!-- Day Card Bar (Header) -->
+            <div class="bg-slate-50/90 px-4 sm:px-6 py-3.5 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">
+                  <i class="far fa-calendar-alt"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm sm:text-base font-bold text-slate-900">${indonesianDateText}</h3>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] text-slate-400">${day.date}</span>
+                    <span class="text-slate-300">&bull;</span>
+                    <span class="text-[11px] font-medium text-indigo-600">${day.contents.length} Konten</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Day Actions -->
+              <div class="flex items-center gap-2">
+                <button onclick="addContentToDay('${day.id}')" 
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors shadow-2xs"
+                        title="Tambah konten lain di hari ini">
+                  <i class="fas fa-plus text-indigo-600"></i>
+                  <span>Tambah Konten</span>
+                </button>
+                <button onclick="deleteDay('${day.id}')" 
+                        class="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                        title="Hapus Seluruh Jadwal Hari Ini">
+                  <i class="far fa-trash-alt text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Content Items Container -->
+            <div class="p-4 sm:p-6 space-y-4 bg-slate-50/30">
+              ${contentsHtml}
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==================== STATE MUTATIONS ====================
+
+    // Toggle video status with instant UI re-render
+    function toggleVideoReady(dayId, itemId, isChecked) {
+      const day = appData.days.find(d => d.id === dayId);
+      if (!day) return;
+      const item = day.contents.find(c => c.id === itemId);
+      if (!item) return;
+
+      item.isVideoReady = isChecked;
+      saveData();
+      renderDays();
+      showToast(isChecked ? 'Status: Video sudah dibuat!' : 'Status: Video belum dibuat');
+    }
+
+    // Toggle upload status with instant UI re-render
+    function toggleContentUploaded(dayId, itemId, isChecked) {
+      const day = appData.days.find(d => d.id === dayId);
+      if (!day) return;
+      const item = day.contents.find(c => c.id === itemId);
+      if (!item) return;
+
+      item.isUploaded = isChecked;
+      saveData();
+      renderDays();
+      showToast(isChecked ? 'Status: Konten sudah diupload!' : 'Status: Konten belum diupload');
+    }
+
+    // Update text fields (title, caption, notes) with debounce auto-save
+    function updateItemField(dayId, itemId, field, value) {
+      const day = appData.days.find(d => d.id === dayId);
+      if (!day) return;
+      const item = day.contents.find(c => c.id === itemId);
+      if (!item) return;
+
+      item[field] = value;
+      triggerAutoSave();
+    }
+
+    // Update platform slot checkboxes
+    function updatePlatformSlot(dayId, itemId, platform, slotName, isChecked) {
+      const day = appData.days.find(d => d.id === dayId);
+      if (!day) return;
+      const item = day.contents.find(c => c.id === itemId);
+      if (!item) return;
+
+      if (!item[platform]) item[platform] = {};
+      item[platform][slotName] = isChecked;
+      triggerAutoSave();
+    }
+
+    // Add another content item under the same day
+    function addContentToDay(dayId) {
+      const day = appData.days.find(d => d.id === dayId);
+      if (!day) return;
+      day.contents.push(createContentItemTemplate());
+      saveData();
+      renderDays();
+      showToast('Konten tambahan ditambahkan untuk hari ini!');
+    }
+
+    // Remove single content item
+    function removeContentItem(dayId, itemId) {
+      const day = appData.days.find(d => d.id === dayId);
+      if (!day) return;
+      if (day.contents.length <= 1) {
+        showToast('Minimal harus ada 1 konten dalam 1 hari', 'warn');
+        return;
+      }
+      day.contents = day.contents.filter(c => c.id !== itemId);
+      saveData();
+      renderDays();
+      showToast('Konten berhasil dihapus');
+    }
+
+    // Delete entire day
+    function deleteDay(dayId) {
+      const targetDay = appData.days.find(d => d.id === dayId);
+      if (!targetDay) return;
+      
+      const formatted = formatIndonesianDate(targetDay.date);
+      appData.days = appData.days.filter(d => d.id !== dayId);
+      saveData();
+      renderDays();
+      showToast(`Jadwal untuk ${formatted} telah dihapus.`);
+    }
+
+    // ==================== ADD NEW DAY LOGIC ====================
+    function addNewDayPrompt() {
+      const container = document.getElementById('quick-add-container');
+      const picker = document.getElementById('new-day-picker');
+      
+      let nextDate = new Date();
+      if (appData.days.length > 0) {
+        const sorted = [...appData.days].sort((a,b) => new Date(a.date) - new Date(b.date));
+        const lastDate = new Date(sorted[sorted.length - 1].date);
+        lastDate.setDate(lastDate.getDate() + 1);
+        nextDate = lastDate;
+      }
+      picker.value = formatDateIso(nextDate);
+      
+      container.classList.remove('hidden');
+      picker.focus();
+    }
+
+    function cancelQuickAdd() {
+      document.getElementById('quick-add-container').classList.add('hidden');
+    }
+
+    function confirmAddNewDay() {
+      const picker = document.getElementById('new-day-picker');
+      const selectedDate = picker.value;
+      if (!selectedDate) {
+        showToast('Pilih tanggal terlebih dahulu', 'warn');
+        return;
+      }
+
+      const exists = appData.days.some(d => d.date === selectedDate);
+      if (exists) {
+        showToast('Tanggal ini sudah ada di dalam daftar jadwal!', 'warn');
+        const existingDay = appData.days.find(d => d.date === selectedDate);
+        if (existingDay) {
+          switchTab('schedule');
+          setTimeout(() => {
+            const el = document.getElementById(`day-card-${existingDay.id}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 150);
+        }
+        return;
+      }
+
+      const newDay = {
+        id: generateId(),
+        date: selectedDate,
+        contents: [createContentItemTemplate()]
+      };
+
+      appData.days.push(newDay);
+      saveData();
+      renderDays();
+      cancelQuickAdd();
+      showToast(`Jadwal hari ${formatIndonesianDate(selectedDate)} ditambahkan!`);
+
+      setTimeout(() => {
+        const el = document.getElementById(`day-card-${newDay.id}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+    }
+
+    // ==================== CALENDAR MONITOR LOGIC ====================
+    function renderCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      const monthYearTitle = document.getElementById('calendar-month-year');
+      
+      const year = currentViewingDate.getFullYear();
+      const month = currentViewingDate.getMonth();
+
+      monthYearTitle.textContent = `${INDONESIAN_MONTHS[month]} ${year}`;
+      grid.innerHTML = '';
+
+      const firstDayOfMonth = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const prevMonthDays = new Date(year, month, 0).getDate();
+      const todayIso = formatDateIso(new Date());
+
+      const schedulesMap = {};
+      appData.days.forEach(d => {
+        schedulesMap[d.date] = d;
+      });
+
+      // Leading days from previous month
+      for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+        const prevDayNum = prevMonthDays - i;
+        const cell = document.createElement('div');
+        cell.className = 'bg-slate-50/60 p-2 sm:p-2.5 min-h-[75px] sm:min-h-[95px] text-slate-300 text-xs font-medium select-none';
+        cell.innerHTML = `<span>${prevDayNum}</span>`;
+        grid.appendChild(cell);
+      }
+
+      // Current month days
+      for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+        const thisDate = new Date(year, month, dayNum);
+        const thisDateIso = formatDateIso(thisDate);
+        const schedule = schedulesMap[thisDateIso];
+        const isToday = thisDateIso === todayIso;
+
+        const cell = document.createElement('div');
+        cell.className = `p-2 sm:p-2.5 min-h-[75px] sm:min-h-[95px] text-xs transition-all cursor-pointer relative flex flex-col justify-between ${
+          schedule ? 'bg-emerald-50/40 hover:bg-emerald-50' : 'bg-white hover:bg-slate-50'
+        }`;
+        
+        let badgeStyle = "font-bold text-slate-700";
+        if (isToday) {
+          badgeStyle = "w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs";
+        }
+
+        let indicatorHtml = '';
+        if (schedule) {
+          const count = schedule.contents.length;
+          const readyCount = schedule.contents.filter(c => c.isVideoReady).length;
+          const uploadedCount = schedule.contents.filter(c => c.isUploaded).length;
+          
+          indicatorHtml = `
+            <div class="mt-1 space-y-1">
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500 text-white text-[10px] font-semibold tracking-tight">
+                <i class="fas fa-check text-[9px]"></i> ${count} Konten
+              </span>
+              <div class="text-[10px] text-slate-500 line-clamp-1">
+                ${readyCount}/${count} video siap
+              </div>
+              <div class="text-[10px] ${uploadedCount === count ? 'text-blue-600 font-semibold' : 'text-slate-400'} line-clamp-1">
+                ${uploadedCount}/${count} diupload
+              </div>
+            </div>
+          `;
+        } else {
+          indicatorHtml = `
+            <div class="mt-auto opacity-0 hover:opacity-100 text-[10px] text-slate-400">
+              + Buat Jadwal
+            </div>
+          `;
+        }
+
+        cell.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="${badgeStyle}">${dayNum}</span>
+            ${schedule ? '<span class="w-2 h-2 rounded-full bg-emerald-500"></span>' : ''}
+          </div>
+          ${indicatorHtml}
+        `;
+
+        cell.onclick = () => onCalendarDateClick(thisDateIso, schedule);
+        grid.appendChild(cell);
+      }
+
+      // Trailing days
+      const totalRendered = firstDayOfMonth + daysInMonth;
+      const trailingDays = (7 - (totalRendered % 7)) % 7;
+      for (let nextDayNum = 1; nextDayNum <= trailingDays; nextDayNum++) {
+        const cell = document.createElement('div');
+        cell.className = 'bg-slate-50/60 p-2 sm:p-2.5 min-h-[75px] sm:min-h-[95px] text-slate-300 text-xs font-medium select-none';
+        cell.innerHTML = `<span>${nextDayNum}</span>`;
+        grid.appendChild(cell);
+      }
+    }
+
+    function changeMonth(delta) {
+      currentViewingDate.setMonth(currentViewingDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function resetToCurrentMonth() {
+      currentViewingDate = new Date();
+      renderCalendar();
+    }
+
+    function onCalendarDateClick(dateIso, schedule) {
+      const detailCard = document.getElementById('calendar-detail-card');
+      const badge = document.getElementById('detail-date-badge');
+      const title = document.getElementById('detail-date-title');
+      const content = document.getElementById('detail-date-content');
+
+      detailCard.classList.remove('hidden');
+      title.textContent = formatIndonesianDate(dateIso);
+
+      if (schedule) {
+        badge.className = "inline-block px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-lg mb-1";
+        badge.textContent = "Ada Jadwal Konten";
+
+        let contentsList = schedule.contents.map((c, i) => `
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 mb-2">
+            <div class="flex items-center justify-between font-semibold text-slate-800 text-sm mb-1">
+              <span>#${i+1} ${escapeHtml(c.title || '(Belum ada judul)')}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-xs ${c.isVideoReady ? 'text-emerald-600 font-semibold' : 'text-slate-400'}">
+                  ${c.isVideoReady ? '<i class="fas fa-video"></i> Video Siap' : '<i class="far fa-circle"></i> Video Belum Dibuat'}
+                </span>
+                <span class="text-xs ${c.isUploaded ? 'text-blue-600 font-semibold' : 'text-slate-400'}">
+                  ${c.isUploaded ? '<i class="fas fa-cloud-arrow-up"></i> Sudah Upload' : '<i class="far fa-clock"></i> Belum Upload'}
+                </span>
+              </div>
+            </div>
+            ${c.notes ? `<div class="text-xs text-amber-700 bg-amber-50/60 p-2 rounded-lg mt-1 border border-amber-200/50"><i class="fas fa-note-sticky text-amber-500 mr-1"></i>${escapeHtml(c.notes)}</div>` : ''}
+            <div class="flex flex-wrap gap-2 text-xs mt-2">
+              <span class="px-2 py-0.5 rounded bg-slate-200/70 text-slate-700">TikTok: ${c.tiktok?.siang ? 'Siang' : ''} ${c.tiktok?.sore ? 'Sore' : ''} ${(!c.tiktok?.siang && !c.tiktok?.sore) ? 'Tidak ada slot' : ''}</span>
+              <span class="px-2 py-0.5 rounded bg-blue-100/70 text-blue-800">FB: ${c.facebook?.siang ? 'Siang' : ''} ${c.facebook?.malam ? 'Malam' : ''} ${(!c.facebook?.siang && !c.facebook?.malam) ? 'Tidak ada slot' : ''}</span>
+            </div>
+          </div>
+        `).join('');
+
+        content.innerHTML = `
+          <div class="mb-3">${contentsList}</div>
+          <button onclick="jumpToDate('${schedule.id}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold">
+            Buka & Edit di Jadwal Harian &rarr;
+          </button>
+        `;
+      } else {
+        badge.className = "inline-block px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg mb-1";
+        badge.textContent = "Belum Ada Jadwal (Kosong)";
+
+        content.innerHTML = `
+          <p class="text-slate-500 mb-4">Belum ada materi atau slot konten yang dijadwalkan pada hari ini.</p>
+          <button onclick="createDateDirectly('${dateIso}')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-2">
+            <i class="fas fa-plus"></i> Buat Jadwal untuk Tanggal Ini
+          </button>
+        `;
+      }
+
+      detailCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function closeDetailCard() {
+      document.getElementById('calendar-detail-card').classList.add('hidden');
+    }
+
+    function jumpToDate(dayId) {
+      switchTab('schedule');
+      setTimeout(() => {
+        const el = document.getElementById(`day-card-${dayId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+
+    function createDateDirectly(dateIso) {
+      const newDay = {
+        id: generateId(),
+        date: dateIso,
+        contents: [createContentItemTemplate()]
+      };
+      appData.days.push(newDay);
+      saveData();
+      renderDays();
+      switchTab('schedule');
+      setTimeout(() => {
+        const el = document.getElementById(`day-card-${newDay.id}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+      showToast(`Jadwal untuk ${formatIndonesianDate(dateIso)} berhasil dibuat!`);
+    }
+
+    // ==================== STATS CALCULATION ====================
+    function updateStats() {
+      const totalScheduledDays = appData.days.length;
+      let totalVideos = 0;
+      let totalVideosReady = 0;
+      let totalUploaded = 0;
+
+      appData.days.forEach(day => {
+        day.contents.forEach(item => {
+          totalVideos++;
+          if (item.isVideoReady) totalVideosReady++;
+          if (item.isUploaded) totalUploaded++;
+        });
+      });
+
+      const totalVideosPending = totalVideos - totalVideosReady;
+
+      // Update Quick Bar
+      const quickTotalEl = document.getElementById('quick-total-videos');
+      const quickReadyEl = document.getElementById('quick-ready-videos');
+      const quickUploadedEl = document.getElementById('quick-uploaded-videos');
+      const quickPendingEl = document.getElementById('quick-pending-videos');
+
+      if (quickTotalEl) quickTotalEl.textContent = totalVideos;
+      if (quickReadyEl) quickReadyEl.textContent = totalVideosReady;
+      if (quickUploadedEl) quickUploadedEl.textContent = totalUploaded;
+      if (quickPendingEl) quickPendingEl.textContent = totalVideosPending;
+
+      // Update Monitor Tab Stats
+      const statDaysEl = document.getElementById('stat-scheduled-days');
+      const statVideosEl = document.getElementById('stat-videos-ready');
+      const statUploadedEl = document.getElementById('stat-contents-uploaded');
+      const statPendingEl = document.getElementById('stat-videos-pending');
+
+      if (statDaysEl) statDaysEl.textContent = totalScheduledDays;
+      if (statVideosEl) statVideosEl.textContent = totalVideosReady;
+      if (statUploadedEl) statUploadedEl.textContent = totalUploaded;
+      if (statPendingEl) statPendingEl.textContent = totalVideosPending;
+    }
+
+    // ==================== TABS SWITCHER ====================
+    function switchTab(tab) {
+      const scheduleView = document.getElementById('view-schedule');
+      const monitorView = document.getElementById('view-monitor');
+      const tabBtnSchedule = document.getElementById('tab-btn-schedule');
+      const tabBtnMonitor = document.getElementById('tab-btn-monitor');
+
+      if (tab === 'schedule') {
+        scheduleView.classList.remove('hidden');
+        monitorView.classList.add('hidden');
+        
+        tabBtnSchedule.className = "flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-xs";
+        tabBtnMonitor.className = "flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900";
+      } else {
+        scheduleView.classList.add('hidden');
+        monitorView.classList.remove('hidden');
+
+        tabBtnMonitor.className = "flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-xs";
+        tabBtnSchedule.className = "flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900";
+
+        renderCalendar();
+        updateStats();
+      }
+    }
+
+    // ==================== UTILITIES ====================
+    function copyToClipboard(text, label) {
+      if (!text || text.trim() === '') {
+        showToast(`${label} masih kosong!`, 'warn');
+        return;
+      }
+
+      const tempTextArea = document.createElement('textarea');
+      tempTextArea.value = text;
+      tempTextArea.style.position = 'fixed';
+      tempTextArea.style.left = '-9999px';
+      tempTextArea.style.top = '0';
+      document.body.appendChild(tempTextArea);
+      tempTextArea.focus();
+      tempTextArea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast(`${label} berhasil disalin ke clipboard!`);
+        } else {
+          showToast('Gagal menyalin teks', 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menyalin teks', 'error');
+      }
+
+      document.body.removeChild(tempTextArea);
+    }
+
+    let toastTimer;
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.textContent = message;
+      if (type === 'warn') {
+        toastIcon.className = "fas fa-exclamation-triangle text-amber-400";
+      } else if (type === 'error') {
+        toastIcon.className = "fas fa-times-circle text-rose-400";
+      } else {
+        toastIcon.className = "fas fa-check-circle text-emerald-400";
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2400);
+    }
+
+    function escapeHtml(string) {
+      if (!string) return '';
+      return String(string)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeAttr(string) {
+      if (!string) return '';
+      return String(string)
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/\n/g, ' ');
+    }
+
+    // ==================== BACKUP & RESTORE ====================
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `content_scheduler_backup_${formatDateIso(new Date())}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('Data berhasil diekspor!');
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported && Array.isArray(imported.days)) {
+            appData = imported;
+            saveData();
+            renderDays();
+            showToast('Data berhasil dipulihkan!');
+          } else {
+            showToast('Format berkas tidak sesuai', 'error');
+          }
+        } catch (err) {
+          showToast('Gagal membaca berkas JSON', 'error');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function clearAllData() {
+      appData = { days: [] };
+      saveData();
+      renderDays();
+      showToast('Semua data berhasil dibersihkan.');
+    }
+
+    // Window Load
+    window.onload = function() {
+      loadData();
+    };
+  </script>
+</body>
+</html>
